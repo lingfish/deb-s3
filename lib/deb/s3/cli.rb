@@ -315,7 +315,7 @@ class Deb::S3::CLI < Thor
   desc "show PACKAGE VERSION ARCH", "Shows information about a package."
 
   def show(package_name, version, arch)
-    if version.nil?
+    if package_name.nil?
       error "You must specify the name of the package to show."
     end
     if version.nil?
@@ -339,6 +339,39 @@ class Deb::S3::CLI < Thor
 
     puts package.generate(options[:codename])
   end
+
+  desc "exists PACKAGE [PACKAGE ...] VERSION ARCH", "Check if packages exist in the repository."
+
+  def exists(*args)
+    if args.length < 3
+      error "Usage: deb-s3 exists PACKAGE [PACKAGE ...] VERSION ARCH"
+    end
+
+    arch = args.pop
+    version = args.pop
+    package_names = args
+
+    configure_s3_client
+
+    manifest = Deb::S3::Manifest.retrieve(options[:codename], component, arch,
+                                          options[:cache_control], false, false)
+
+    missing = false
+    package_names.each do |package_name|
+      package = manifest.packages.detect { |p|
+        p.name == package_name && p.full_version == version
+      }
+      if package.nil?
+        log("#{package_name} #{version} #{arch}: Missing")
+        missing = true
+      else
+        log("#{package_name} #{version} #{arch}: Found")
+      end
+    end
+
+    exit 1 if missing
+  end
+
 
   desc "copy PACKAGE TO_CODENAME TO_COMPONENT ",
     "Copy the package named PACKAGE to given codename and component. If --versions is not specified, copy all versions of PACKAGE. Otherwise, only the specified versions will be copied. Source codename and component is given by --codename and --component options."
