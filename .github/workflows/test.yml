@@ -1,0 +1,27 @@
+---
+# yamllint disable rule:line-length
+name: Test
+
+# yamllint disable rule:truthy
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - uses: jdx/mise-action@v3
+      - name: Install gettext-base
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: gettext-base
+      - name: test
+        run: mise run build:deb
+      - name: Test Package
+        run: |
+          mise exec -- rake test
