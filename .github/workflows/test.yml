@@ -20,8 +20,6 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
           packages: gettext-base
-      - name: test
-        run: mise run build:deb
       - name: Test Package
         run: |
-          mise exec -- rake test
+          rake test
