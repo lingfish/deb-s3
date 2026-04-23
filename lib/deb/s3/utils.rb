@@ -117,4 +117,16 @@ module Deb::S3::Utils
       )
     end
   end
+
+  def s3_copy(source, destination)
+    s3.copy_object({
+      :bucket => Deb::S3::Utils.bucket,
+      :copy_source => s3_path(source),
+      :key => s3_path(destination),
+    })
+  end
+
+  def log(msg)
+    $stdout.puts ">> #{msg}"
+  end
 end

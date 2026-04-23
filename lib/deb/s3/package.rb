@@ -140,8 +140,8 @@ class Deb::S3::Package
     @url_filename = f
   end
   
-  def url_filename(codename)
-    @url_filename || "pool/#{codename}/#{self.name[0]}/#{self.name[0..1]}/#{File.basename(self.filename)}"
+  def url_filename(component)
+    @url_filename || "pool/#{component}/#{self.name[0]}/#{self.name[0..1]}/#{File.basename(self.filename)}"
   end
 
   def generate(codename)
