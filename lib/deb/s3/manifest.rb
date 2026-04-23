@@ -62,11 +62,11 @@ class Deb::S3::Manifest
       packages.each { |p|
         next unless p.name == pkg.name && \
                     p.full_version == pkg.full_version && \
-                    File.basename(p.url_filename(@codename)) != \
-                    File.basename(pkg.url_filename(@codename))
+                    File.basename(p.url_filename(@component)) != \
+                    File.basename(pkg.url_filename(@component))
         raise AlreadyExistsError,
               "package #{pkg.name}_#{pkg.full_version} already exists " \
-              "with different filename (#{p.url_filename(@codename)})"
+              "with different filename (#{p.url_filename(@component)})"
       }
     end
     if preserve_versions
@@ -96,17 +96,28 @@ class Deb::S3::Manifest
   end
 
   def generate
-    @packages.collect { |pkg| pkg.generate(@codename) }.join("\n")
+    @packages.collect { |pkg| pkg.generate(@component) }.join("\n")
   end
 
   def write_to_s3
     manifest = self.generate
 
     unless self.skip_package_upload
-      # store any packages that need to be stored
       @packages_to_be_upload.each do |pkg|
-        yield pkg.url_filename(@codename) if block_given?
-        s3_store(pkg.filename, pkg.url_filename(@codename), 'application/octet-stream; charset=binary', self.cache_control, self.fail_if_exists)
+        new_path = pkg.url_filename(@component)
+        old_path = "pool/#{@codename}/#{pkg.name[0]}/#{pkg.name[0..1]}/#{File.basename(pkg.filename)}"
+
+        if s3_exists?(new_path)
+          yield new_path if block_given?
+        elsif s3_exists?(old_path)
+          log("Migrating package from pool/#{@codename} to pool/#{@component}")
+          s3_copy(old_path, new_path)
+          s3_remove(old_path)
+          yield new_path if block_given?
+        else
+          yield new_path if block_given?
+          s3_store(pkg.filename, new_path, 'application/octet-stream; charset=binary', self.cache_control, self.fail_if_exists)
+        end
       end
     end
 

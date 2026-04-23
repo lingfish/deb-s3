@@ -619,9 +619,9 @@ class Deb::S3::CLI < Thor
       missing_packages = []
 
       manifest.packages.each do |p|
-        unless Deb::S3::Utils.s3_exists? p.url_filename(options[:codename])
+        unless Deb::S3::Utils.s3_exists? p.url_filename(component)
           sublog("The following packages are missing:\n\n") if missing_packages.empty?
-          puts(p.generate(options[:codename]))
+          puts(p.generate(component))
           puts("")
 
           missing_packages << p
@@ -684,20 +684,20 @@ class Deb::S3::CLI < Thor
       refd_urls = Set[]
       manifests.each do |manifest|
         manifest.packages.each do |package|
-          refd_urls.add(Deb::S3::Utils.s3_path(package.url_filename(manifest.codename)))
+          refd_urls.add(Deb::S3::Utils.s3_path(package.url_filename(manifest.component)))
         end
       end
 
       log("Searching for unreferenced packages")
 
-      # Enumerate objects under the pools/<codename> prefix and delete any that
-      # arent referenced by any of the manifests.
+      # Enumerate objects under the pools/ prefix and delete any that
+      # aren't referenced by any of the manifests.
 
       continuation_token = nil
       while true
         req = Deb::S3::Utils.s3.list_objects_v2({
           :bucket => Deb::S3::Utils.bucket,
-          :prefix => Deb::S3::Utils.s3_path("pool/#{ options[:codename] }/"),
+          :prefix => Deb::S3::Utils.s3_path("pool/"),
           :continuation_token => continuation_token,
         })
 
