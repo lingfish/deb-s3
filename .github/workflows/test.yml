@@ -22,4 +22,4 @@ jobs:
           packages: gettext-base
       - name: Test Package
         run: |
-          mise exec -- rake test
+          rake test
